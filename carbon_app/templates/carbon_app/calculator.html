@@ -1,0 +1,71 @@
+{% extends 'carbon_app/base.html' %}
+
+{% block title %}Калькулятор CO₂{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-calculator"></i> Простой калькулятор CO₂</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Что вы делали?</label>
+                        <select class="form-select" name="activity_type" required>
+                            <option value="">Выберите активность</option>
+                            <option value="car">🚗 Поездка на автомобиле</option>
+                            <option value="bus">🚌 Поездка на автобусе</option>
+                            <option value="plane">✈️ Перелет на самолете</option>
+                            <option value="beef">🥩 Употребление говядины</option>
+                            <option value="chicken">🍗 Употребление курицы</option>
+                            <option value="electricity">💡 Потребление электроэнергии</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Количество *</label>
+                        <input type="number" class="form-control" name="quantity" 
+                               step="0.1" min="0.1" placeholder="Например: 10" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Единица измерения</label>
+                        <input type="text" class="form-control" name="unit" 
+                               value="км" readonly>
+                        <small class="text-muted">Автоматически определяется</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100 btn-lg">
+                        <i class="bi bi-calculator"></i> Рассчитать CO₂
+                    </button>
+                </form>
+                
+                <!-- Результат -->
+                {% if result %}
+                <div class="alert alert-info mt-4">
+                    <h5><i class="bi bi-check-circle"></i> Результат:</h5>
+                    <p class="display-6 text-center">{{ result.calculated_co2 }} кг CO₂</p>
+                    <p class="text-center">
+                        <small>{{ result.quantity }} {{ result.unit }} {{ result.activity_type }}</small>
+                    </p>
+                </div>
+                {% endif %}
+                
+                <!-- Примеры -->
+                <div class="mt-4">
+                    <h6><i class="bi bi-lightbulb"></i> Примеры:</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item">🚗 10 км на авто = <strong>1.2 кг CO₂</strong></li>
+                        <li class="list-group-item">🥩 1 кг говядины = <strong>27 кг CO₂</strong></li>
+                        <li class="list-group-item">💡 100 кВт·ч электричества = <strong>40 кг CO₂</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
