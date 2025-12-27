@@ -67,3 +67,28 @@ class UserActivity(models.Model):
     
     def __str__(self):
         return f"{self.user.username}: {self.activity_type} ({self.date}) - {self.calculated_co2} кг CO₂"
+
+class Recommendation(models.Model):
+    """Рекомендации по снижению углеродного следа"""
+    PRIORITY_CHOICES = [
+        ('high', 'Высокий приоритет'),
+        ('medium', 'Средний приоритет'),
+        ('low', 'Низкий приоритет'),
+    ]
+    
+    title = models.CharField(max_length=200, verbose_name="Заголовок рекомендации")
+    description = models.TextField(verbose_name="Подробное описание")
+    category = models.ForeignKey(ActivityCategory, on_delete=models.CASCADE, 
+                                verbose_name="Категория", null=True, blank=True)
+    co2_saving = models.FloatField(verbose_name="Экономия CO₂ (кг/месяц)", default=0)
+    difficulty = models.CharField(max_length=20, choices=PRIORITY_CHOICES, 
+                                 default='medium', verbose_name="Сложность внедрения")
+    is_general = models.BooleanField(default=True, verbose_name="Общая рекомендация")
+    
+    class Meta:
+        verbose_name = "Рекомендация"
+        verbose_name_plural = "Рекомендации"
+        ordering = ['-co2_saving']
+    
+    def __str__(self):
+        return self.title
