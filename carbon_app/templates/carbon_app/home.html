@@ -1,0 +1,46 @@
+{% extends 'carbon_app/base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1 class="display-4">🌍 CarbonFootprint Tracker</h1>
+    <p class="lead">Учет и анализ вашего углеродного следа</p>
+    
+    <div class="row mt-5">
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-calculator text-success"></i> Калькулятор</h5>
+                    <p>Быстро оцените свой углеродный след</p>
+                    <a href="{% url 'calculator' %}" class="btn btn-outline-success">Попробовать</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-graph-up text-success"></i> Аналитика</h5>
+                    <p>Детальная статистика и графики</p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-success">Моя статистика</a>
+                    {% else %}
+                        <a href="{% url 'admin:login' %}" class="btn btn-outline-success">Войти</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-lightbulb text-success"></i> Рекомендации</h5>
+                    <p>Персонализированные советы по снижению CO₂</p>
+                    <button class="btn btn-outline-success" disabled>Скоро</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
