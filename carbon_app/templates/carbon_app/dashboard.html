@@ -1,0 +1,118 @@
+{% extends 'carbon_app/base.html' %}
+
+{% block title %}Мой углеродный след{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">
+        <i class="bi bi-speedometer2 text-success"></i> Моя статистика
+    </h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Ваш углеродный след</h5>
+                    
+                    {% if total_co2 %}
+                    <div class="row text-center mt-4">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-success text-white rounded">
+                                <h3>{{ total_co2 }} кг</h3>
+                                <p class="mb-0">Всего CO₂</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="p-3 bg-info text-white rounded">
+                                <h3>{{ avg_daily }} кг</h3>
+                                <p class="mb-0">В среднем за день</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="p-3 bg-primary text-white rounded">
+                                <h3>{{ activity_count }}</h3>
+                                <p class="mb-0">Активностей</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if recent_activities %}
+                    <h5 class="mt-5">📝 Последние активности</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Активность</th>
+                                    <th>Количество</th>
+                                    <th>CO₂</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>{{ activity.date|date:"d.m.Y" }}</td>
+                                    <td>{{ activity.activity_type }}</td>
+                                    <td>{{ activity.quantity }} {{ activity.unit }}</td>
+                                    <td class="text-success">
+                                        <strong>{{ activity.calculated_co2 }} кг</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mt-4">
+                        <p>У вас еще нет активностей. Добавьте первую!</p>
+                        <a href="{% url 'add_activity' %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Добавить активность
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h5>📈 Данных пока нет</h5>
+                        <p>Начните добавлять активности, чтобы увидеть статистику.</p>
+                        <a href="{% url 'add_activity' %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Добавить первую активность
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">⚡ Быстрые действия</h5>
+                    <a href="{% url 'add_activity' %}" class="btn btn-success w-100 mb-2">
+                        <i class="bi bi-plus-circle"></i> Добавить активность
+                    </a>
+                    <a href="{% url 'calculator' %}" class="btn btn-outline-success w-100 mb-2">
+                        <i class="bi bi-calculator"></i> Калькулятор
+                    </a>
+                </div>
+            </div>
+            
+            {% if recommendations %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">💡 Рекомендации</h5>
+                    {% for rec in recommendations %}
+                    <div class="alert alert-{{ rec.priority }} mb-2">
+                        <strong>{{ rec.title }}</strong><br>
+                        <small>{{ rec.description }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
