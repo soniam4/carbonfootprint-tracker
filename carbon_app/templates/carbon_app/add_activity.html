@@ -1,0 +1,132 @@
+{% extends 'carbon_app/base.html' %}
+
+{% block title %}Добавить активность{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Добавить активность</h4>
+            </div>
+            
+            <div class="card-body">
+                <!-- ПРОСТАЯ ФОРМА без Django форм -->
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- 1. КАТЕГОРИЯ (выпадающий список) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-tags"></i> Категория активности *
+                        </label>
+                        <select name="category" class="form-select" required>
+                            <option value="">-- Выберите категорию --</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">
+                                {{ category.name }}
+                            </option>
+                            {% empty %}
+                            <option value="" disabled>Нет категорий в базе</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Выберите наиболее подходящую категорию</div>
+                    </div>
+                    
+                    <!-- 2. ТИП АКТИВНОСТИ -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-activity"></i> Тип активности *
+                        </label>
+                        <input type="text" name="activity_type" class="form-control" 
+                               placeholder="Например: Поездка на автомобиле, Употребление говядины"
+                               required>
+                        <div class="form-text">Опишите конкретную активность</div>
+                    </div>
+                    
+                    <!-- 3. КОЛИЧЕСТВО и ЕДИНИЦА -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-123"></i> Количество *
+                            </label>
+                            <input type="number" name="quantity" class="form-control" 
+                                   step="0.1" min="0.1" placeholder="10" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-rulers"></i> Единица измерения *
+                            </label>
+                            <input type="text" name="unit" class="form-control" 
+                                   placeholder="км, кг, кВт·ч, литры" required>
+                            <div class="form-text">Примеры: км, кг, кВт·ч, литры, штуки</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 4. ЗАМЕТКИ -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-chat-left-text"></i> Заметки (необязательно)
+                        </label>
+                        <textarea name="notes" class="form-control" rows="3" 
+                                  placeholder="Дополнительные заметки..."></textarea>
+                    </div>
+                    
+                    <!-- 5. КНОПКИ -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Сохранить активность
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад к дашборду
+                        </a>
+                    </div>
+                </form>
+                
+                <!-- ПРИМЕРЫ -->
+                <div class="mt-5 pt-4 border-top">
+                    <h5><i class="bi bi-lightbulb text-warning"></i> Примеры для заполнения:</h5>
+                    
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Категория</th>
+                                    <th>Тип активности</th>
+                                    <th>Количество</th>
+                                    <th>Единица</th>
+                                    <th>≈ CO₂</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Транспорт</td>
+                                    <td>Поездка на автомобиле</td>
+                                    <td>15</td>
+                                    <td>км</td>
+                                    <td class="text-success">1.8 кг</td>
+                                </tr>
+                                <tr>
+                                    <td>Питание</td>
+                                    <td>Употребление говядины</td>
+                                    <td>0.5</td>
+                                    <td>кг</td>
+                                    <td class="text-success">13.5 кг</td>
+                                </tr>
+                                <tr>
+                                    <td>Энергия дома</td>
+                                    <td>Потребление электроэнергии</td>
+                                    <td>100</td>
+                                    <td>кВт·ч</td>
+                                    <td class="text-success">40 кг</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
