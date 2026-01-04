@@ -1,71 +1,220 @@
 {% extends 'carbon_app/base.html' %}
+{% load static %}
 
-{% block title %}Калькулятор CO₂{% endblock %}
+{% block title %}Калькулятор - CarbonTracker{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0"><i class="bi bi-calculator"></i> Простой калькулятор CO₂</h4>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Что вы делали?</label>
-                        <select class="form-select" name="activity_type" required>
-                            <option value="">Выберите активность</option>
-                            <option value="car">🚗 Поездка на автомобиле</option>
-                            <option value="bus">🚌 Поездка на автобусе</option>
-                            <option value="plane">✈️ Перелет на самолете</option>
-                            <option value="beef">🥩 Употребление говядины</option>
-                            <option value="chicken">🍗 Употребление курицы</option>
-                            <option value="electricity">💡 Потребление электроэнергии</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Количество *</label>
-                        <input type="number" class="form-control" name="quantity" 
-                               step="0.1" min="0.1" placeholder="Например: 10" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Единица измерения</label>
-                        <input type="text" class="form-control" name="unit" 
-                               value="км" readonly>
-                        <small class="text-muted">Автоматически определяется</small>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-success w-100 btn-lg">
-                        <i class="bi bi-calculator"></i> Рассчитать CO₂
-                    </button>
-                </form>
-                
-                <!-- Результат -->
-                {% if result %}
-                <div class="alert alert-info mt-4">
-                    <h5><i class="bi bi-check-circle"></i> Результат:</h5>
-                    <p class="display-6 text-center">{{ result.calculated_co2 }} кг CO₂</p>
-                    <p class="text-center">
-                        <small>{{ result.quantity }} {{ result.unit }} {{ result.activity_type }}</small>
-                    </p>
+<div class="container py-5">
+    <h1 class="mb-4">
+        <i class="bi bi-calculator text-primary"></i> Калькулятор углеродного следа
+    </h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Рассчитать выбросы CO₂</h4>
                 </div>
-                {% endif %}
-                
-                <!-- Примеры -->
-                <div class="mt-4">
-                    <h6><i class="bi bi-lightbulb"></i> Примеры:</h6>
-                    <ul class="list-group">
-                        <li class="list-group-item">🚗 10 км на авто = <strong>1.2 кг CO₂</strong></li>
-                        <li class="list-group-item">🥩 1 кг говядины = <strong>27 кг CO₂</strong></li>
-                        <li class="list-group-item">💡 100 кВт·ч электричества = <strong>40 кг CO₂</strong></li>
-                    </ul>
+                <div class="card-body">
+                    <form method="post" id="calculator-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Категория</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Выберите категорию</option>
+                                <option value="transport">Транспорт</option>
+                                <option value="food">Питание</option>
+                                <option value="energy">Энергия</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="activity_type" class="form-label">Тип активности</label>
+                            <input type="text" class="form-control" id="activity_type" name="activity_type" 
+                                required placeholder="Например: автомобиль (бензин), говядина, электричество...">
+                            <small class="text-muted">Введите тип активности. Для транспорта используйте "км", для продуктов - "кг", для энергии - "кВт·ч"</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Количество</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   step="0.01" min="0" required placeholder="Например: 100">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="unit" class="form-label">Единица измерения</label>
+                            <input type="text" class="form-control" id="unit" name="unit" 
+                                   readonly placeholder="Определяется автоматически">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="co2_per_unit" class="form-label">Коэффициент CO₂</label>
+                            <input type="text" class="form-control" id="co2_per_unit" 
+                                   readonly placeholder="кг CO₂ на единицу">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-calculator"></i> Рассчитать
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Результат расчета</h4>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if result %}
+                    <div class="alert alert-success">
+                        <h5>Результат расчета:</h5>
+                        <p><strong>Категория:</strong> {{ result.category }}</p>
+                        <p><strong>Активность:</strong> {{ result.activity_type }}</p>
+                        <p><strong>Количество:</strong> {{ result.quantity }} {{ result.unit }}</p>
+                        <p><strong>Коэффициент CO₂:</strong> {{ result.co2_per_unit }} кг/{{ result.unit }}</p>
+                        <hr>
+                        <h4 class="text-success">
+                            <i class="bi bi-cloud"></i> Общий выброс: 
+                            <strong>{{ result.calculated_co2 }} кг CO₂</strong>
+                        </h4>
+                        
+                        {% if result.saved %}
+                        <div class="mt-3">
+                            <span class="badge bg-info">
+                                <i class="bi bi-save"></i> Результат сохранен в вашу историю
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mt-4">
+                            <h6>Что это значит?</h6>
+                            <p class="small text-muted">
+                                Для компенсации {{ result.calculated_co2 }} кг CO₂ потребуется 
+                                примерно {{ result.calculated_co2|divisibleby:21|add:"1" }} деревьев в год.
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-calculator display-1"></i>
+                        <p class="mt-3">Введите данные для расчета</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Справка по единицам -->
+                    <div class="mt-4">
+                        <h6><i class="bi bi-info-circle"></i> Справка по единицам:</h6>
+                        <ul class="small">
+                            <li><strong>Транспорт:</strong> километры (км)</li>
+                            <li><strong>Питание:</strong> килограммы (кг), литры (л)</li>
+                            <li><strong>Энергия:</strong> киловатт-часы (кВт·ч), кубометры (м³)</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Данные для JavaScript -->
+{{ units_data|json_script:"units-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Загружаем данные из Django
+    const unitsData = JSON.parse(document.getElementById('units-data').textContent);
+    
+    // При изменении категории
+    $('#category').change(function() {
+        const category = $(this).val();
+        const activitySelect = $('#activity_type');
+        const unitInput = $('#unit');
+        const co2Input = $('#co2_per_unit');
+        
+        // Очищаем поля
+        activitySelect.empty();
+        unitInput.val('');
+        co2Input.val('');
+        
+        if (category && unitsData[category]) {
+            // Добавляем опции для выбранной категории
+            activitySelect.append('<option value="">Выберите тип активности</option>');
+            
+            for (const [activity, data] of Object.entries(unitsData[category])) {
+                activitySelect.append(
+                    `<option value="${activity}" data-unit="${data.unit}" data-co2="${data.co2_per_unit}">
+                        ${activity}
+                    </option>`
+                );
+            }
+        } else {
+            activitySelect.append('<option value="">Сначала выберите категорию</option>');
+        }
+    });
+    
+    // При изменении типа активности
+    $('#activity_type').change(function() {
+        const selectedOption = $(this).find(':selected');
+        const unit = selectedOption.data('unit');
+        const co2 = selectedOption.data('co2');
+        
+        if (unit) {
+            $('#unit').val(unit);
+            $('#co2_per_unit').val(co2 + ' кг/' + unit);
+            
+            // Устанавливаем подсказку для количества
+            if (unit === 'км') {
+                $('#quantity').attr('placeholder', 'Например: 50 (расстояние в км)');
+            } else if (unit === 'кг') {
+                $('#quantity').attr('placeholder', 'Например: 2 (вес в кг)');
+            } else if (unit === 'л') {
+                $('#quantity').attr('placeholder', 'Например: 1.5 (объем в литрах)');
+            } else if (unit === 'кВт·ч') {
+                $('#quantity').attr('placeholder', 'Например: 150 (потребление энергии)');
+            }
+        }
+    });
+    
+    // Подсказка при фокусе на количестве
+    $('#quantity').focus(function() {
+        const unit = $('#unit').val();
+        if (!unit) {
+            alert('Сначала выберите категорию и тип активности');
+            $('#category').focus();
+        }
+    });
+    
+    // Предзаполнение формы при загрузке страницы (если есть результат)
+    {% if result %}
+        $('#category').val('{{ result.category }}').trigger('change');
+        setTimeout(function() {
+            $('#activity_type').val('{{ result.activity_type }}').trigger('change');
+            $('#quantity').val('{{ result.quantity }}');
+        }, 100);
+    {% endif %}
+});
+</script>
+
+<style>
+#unit, #co2_per_unit {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+</style>
 {% endblock %}
