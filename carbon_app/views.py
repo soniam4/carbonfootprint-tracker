@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Q
 import json
-from .models import UserActivity, ActivityCategory, EmissionFactor
+from .models import UserActivity, ActivityCategory, EmissionFactor, Recommendation
 from .forms import UserActivityForm
 from django.contrib.auth import login, logout as auth_logout, authenticate
 from django.contrib.auth.forms import UserCreationForm
@@ -21,8 +21,21 @@ import os
 from django.conf import settings
 
 def home(request):
-    """Главная страница для гостей"""
-    return render(request, 'carbon_app/home.html')
+    # Просто берём все активные рекомендации
+    recommendations = Recommendation.objects.filter(is_active=True)
+    
+    # Группируем по категориям для красивого отображения
+    rec_by_category = {}
+    for rec in recommendations:
+        if rec.category not in rec_by_category:
+            rec_by_category[rec.category] = []
+        rec_by_category[rec.category].append(rec)
+    
+    context = {
+        'recommendations': recommendations,
+        'rec_by_category': rec_by_category,
+    }
+    return render(request, 'carbon_app/home.html', context)
 
 @login_required
 def dashboard(request):

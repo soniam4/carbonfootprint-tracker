@@ -70,27 +70,60 @@ class UserActivity(models.Model):
 
 # Модель для рекомендаций
 class Recommendation(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    category = models.CharField(max_length=100)
-    difficulty = models.CharField(max_length=20, default='medium')  # ДОБАВЬТЕ ЭТУ СТРОКУ
-    co2_saving = models.FloatField(default=0)
-    icon = models.CharField(max_length=50, default="lightbulb")
+    PRIORITY_CHOICES = [
+        ('high', 'Высокий приоритет 🔴'),
+        ('medium', 'Средний приоритет 🟡'),
+        ('low', 'Низкий приоритет 🟢'),
+    ]
+    
+    CATEGORY_CHOICES = [
+        ('transport', '🚗 Транспорт'),
+        ('food', '🍔 Питание'),
+        ('energy', '💡 Энергия'),
+        ('shopping', '🛍️ Покупки'),
+        ('general', '🌍 Общие'),
+    ]
+    
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    description = models.TextField(verbose_name="Описание")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general', verbose_name="Категория")
+    co2_saving = models.FloatField(verbose_name="Экономия CO₂ (кг/месяц)", default=0)
+    difficulty = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Сложность")
+    icon = models.CharField(max_length=50, default='bi-lightbulb', verbose_name="Иконка")
+    
+    # ДОБАВЬТЕ ЭТУ СТРОЧКУ ↓
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+    
+    class Meta:
+        verbose_name = "Рекомендация"
+        verbose_name_plural = "Рекомендации"
+        ordering = ['-co2_saving']
     
     def __str__(self):
-        return self.title
+        return f"{self.get_category_display()}: {self.title}"
+    
+    def get_priority_color(self):
+        colors = {
+            'high': 'danger',
+            'medium': 'warning',
+            'low': 'success'
+        }
+        return colors.get(self.difficulty, 'secondary')
 
 
 # Модель для связи пользователя с рекомендациями
 class UserRecommendation(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE)
-    is_viewed = models.BooleanField(default=False)
-    is_applied = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    """Связь пользователя с рекомендациями"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    recommendation = models.ForeignKey(Recommendation, on_delete=models.CASCADE, verbose_name="Рекомендация")
+    is_viewed = models.BooleanField(default=False, verbose_name="Просмотрено")
+    is_applied = models.BooleanField(default=False, verbose_name="Применено")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
     
     class Meta:
-        unique_together = ['user', 'recommendation']
+        verbose_name = "Рекомендация пользователя"
+        verbose_name_plural = "Рекомендации пользователей"
+        ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.user.username} - {self.recommendation.title}"
+        return f"{self.user.username}: {self.recommendation.title}"
