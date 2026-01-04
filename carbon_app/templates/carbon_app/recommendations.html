@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Рекомендации - CarbonTracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { padding-top: 70px; background-color: #f8f9fa; }
+        .card { margin-bottom: 20px; }
+        .badge { font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <!-- Простая навигация -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand text-success" href="/">
+                <i class="bi bi-cloud-sun"></i> CarbonTracker
+            </a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/">Главная</a>
+                <a class="nav-link" href="/calculator/">Калькулятор</a>
+                <a class="nav-link" href="/dashboard/">Статистика</a>
+                <a class="nav-link active" href="/recommendations/">Рекомендации</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h1 class="mb-4">
+            <i class="bi bi-lightbulb text-warning"></i> Мои рекомендации
+        </h1>
+        <div class="text-center mb-4">
+            <button class="btn btn-warning" id="refresh-recommendations">
+                <i class="bi bi-arrow-clockwise"></i> Обновить рекомендации
+            </button>
+            <small class="text-muted d-block mt-2">
+                Новые рекомендации появляются раз в неделю на основе вашей активности
+            </small>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ applied_count }}</h5>
+                        <p class="card-text">Применено рекомендаций</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_count }}</h5>
+                        <p class="card-text">Всего рекомендаций</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ total_count|add:"-0" }}</h5>
+                        <p class="card-text">Новых</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for user_rec in recommendations %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between">
+                        <span class="badge bg-primary">{{ user_rec.recommendation.category }}</span>
+                        <i class="bi bi-{{ user_rec.recommendation.icon }} text-primary"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ user_rec.recommendation.title }}</h5>
+                        <p class="card-text">{{ user_rec.recommendation.description }}</p>
+                        
+                        <div class="mb-3">
+                            <span class="badge bg-success">
+                                <i class="bi bi-cloud-minus"></i> 
+                                {{ user_rec.recommendation.co2_saving }} кг CO₂
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            {% if not user_rec.is_viewed %}
+                            <button class="btn btn-sm btn-outline-primary mark-viewed" 
+                                    data-id="{{ user_rec.id }}">
+                                <i class="bi bi-eye"></i> Просмотрено
+                            </button>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-eye"></i> Просмотрено</span>
+                            {% endif %}
+                            
+                            {% if not user_rec.is_applied %}
+                            <button class="btn btn-sm btn-success mark-applied" 
+                                    data-id="{{ user_rec.id }}">
+                                <i class="bi bi-check"></i> Применить
+                            </button>
+                            {% else %}
+                            <span class="text-success"><i class="bi bi-check-circle"></i> Применено</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> На главную
+            </a>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        // Отметить как просмотренное
+        $('.mark-viewed').click(function() {
+            var recId = $(this).data('id');
+            var button = $(this);
+            
+            $.ajax({
+                url: '/recommendations/' + recId + '/mark-viewed/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(data) {
+                    if (data.success) {
+                        location.reload();
+                    }
+                }
+            });
+        });
+        
+        // Отметить как примененное
+        $('.mark-applied').click(function() {
+            var recId = $(this).data('id');
+            
+            $.ajax({
+                url: '/recommendations/' + recId + '/mark-applied/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(data) {
+                    if (data.success) {
+                        location.reload();
+                    }
+                }
+            });
+        });
+        
+        // Получить CSRF токен
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+    </script>
+</body>
+</html>

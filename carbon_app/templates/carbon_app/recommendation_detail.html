@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Рекомендация - CarbonTracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body style="padding-top: 70px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand text-success" href="/">
+                <i class="bi bi-cloud-sun"></i> CarbonTracker
+            </a>
+            <a href="/recommendations/" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">{{ user_rec.recommendation.title }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Описание:</h5>
+                    <p class="lead">{{ user_rec.recommendation.description }}</p>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>Категория:</h5>
+                    <span class="badge bg-primary">{{ user_rec.recommendation.category }}</span>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>Потенциальная экономия CO₂:</h5>
+                    <h2 class="text-success">{{ user_rec.recommendation.co2_saving }} кг</h2>
+                </div>
+                
+                <div class="mb-4">
+                    <h5>Статус:</h5>
+                    {% if user_rec.is_applied %}
+                    <span class="badge bg-success">Применено</span>
+                    {% elif user_rec.is_viewed %}
+                    <span class="badge bg-primary">Просмотрено</span>
+                    {% else %}
+                    <span class="badge bg-warning">Новое</span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-3">
+                    {% if not user_rec.is_applied %}
+                    <button class="btn btn-success" id="apply-btn">
+                        <i class="bi bi-check-circle"></i> Применить
+                    </button>
+                    {% endif %}
+                    
+                    <a href="/recommendations/" class="btn btn-secondary">
+                        <i class="bi bi-list"></i> К списку
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $('#apply-btn').click(function() {
+        $.ajax({
+            url: '/recommendations/{{ user_rec.id }}/mark-applied/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(data) {
+                if (data.success) {
+                    location.reload();
+                }
+            }
+        });
+    });
+    
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    </script>
+</body>
+</html>
