@@ -7,8 +7,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 from datetime import datetime, timedelta
+import random
 # В начале файла добавьте импорт
-from datetime import datetime, timedelta
 from django.db.models import Sum, Count, Q
 import json
 from .models import UserActivity, ActivityCategory, EmissionFactor, Recommendation
@@ -19,6 +19,7 @@ from django.contrib.auth.decorators import login_required
 import json
 import os
 from django.conf import settings
+from django.utils import timezone 
 
 def home(request):
     # Просто берём все активные рекомендации
@@ -213,24 +214,68 @@ def add_activity(request):
     return render(request, 'carbon_app/add_activity.html', context)
 
 def update_user_recommendations(user):
-    """Обновляет рекомендации на основе активности пользователя"""
+    """Генерирует рекомендации на основе активности за последние 30 дней"""
     from .models import UserActivity, UserRecommendation, Recommendation
     from datetime import datetime, timedelta
+
+    # Проверяем, сколько уже рекомендаций
+    existing_count = UserRecommendation.objects.filter(user=user).count()
     
-    # Анализируем активность за последний месяц
-    month_ago = datetime.now() - timedelta(days=30)
-    activities = UserActivity.objects.filter(user=user, date__gte=month_ago)
+    # Если меньше 4 — добавим начальные (на всякий случай)
+    if existing_count < 4:
+        assign_initial_recommendations(user)
+        return
+
+    # Если прошло меньше 7 дней с последнего обновления — не обновляем
+    last_update = UserRecommendation.objects.filter(user=user).order_by('-created_at').first()
+    if last_update and (timezone.now() - last_update.created_at).days < 7:
+        return
+
+    # Анализируем активность за 30 дней
+    month_ago = timezone.now() - timedelta(days=30)
+    activities = UserActivity.objects.filter(user=user, date__gte=month_ago.date())
     
-    # Если у пользователя много активностей, предлагаем новые рекомендации
-    if activities.count() >= 5:
-        # Проверяем, не пора ли обновить рекомендации
-        last_rec_update = UserRecommendation.objects.filter(
-            user=user
-        ).order_by('-created_at').first()
-        
-        # Если последняя рекомендация была больше недели назад
-        if not last_rec_update or (datetime.now() - last_rec_update.created_at).days > 7:
-            add_new_recommendation(user)
+    if not activities.exists():
+        return
+
+    # Считаем CO₂ по категориям
+    from collections import defaultdict
+    co2_by_cat = defaultdict(float)
+    for act in activities:
+        cat_name = act.category.name.lower()
+        co2_by_cat[cat_name] += act.calculated_co2
+
+    if not co2_by_cat:
+        return
+
+    # Находим категорию с макс. выбросами
+    top_cat = max(co2_by_cat, key=co2_by_cat.get)
+
+    # Маппинг ActivityCategory.name → Recommendation.category
+    category_map = {
+        'transport': 'transport',
+        'транспорт': 'transport',
+        'food': 'food',
+        'питание': 'food',
+        'energy': 'energy',
+        'энергия': 'energy',
+        'lifestyle': 'shopping',
+        'образ жизни': 'shopping',
+        'покупки': 'shopping',
+    }
+
+    target_cat = category_map.get(top_cat, 'general')
+
+    # Берём 1–2 рекомендации из этой категории
+    new_recs = Recommendation.objects.filter(
+        category=target_cat,
+        is_active=True
+    ).exclude(
+        id__in=UserRecommendation.objects.filter(user=user).values_list('recommendation_id', flat=True)
+    ).order_by('-co2_saving')[:2]
+
+    for rec in new_recs:
+        UserRecommendation.objects.create(user=user, recommendation=rec, is_viewed=False)
 
 
 def add_new_recommendation(user):
@@ -341,55 +386,35 @@ def delete_activity(request, activity_id):
 
 @login_required
 def recommendations_page(request):
-    """Страница со всеми рекомендациями"""
-    # Персонализированные рекомендации
-    from carbon_app.models import Recommendation
+    from .models import UserRecommendation
     
-    all_recommendations = Recommendation.objects.all()
+    user_recs = UserRecommendation.objects.filter(user=request.user).select_related('recommendation')
     
-    # Группируем по категориям
-    recommendations_by_category = {}
-    for rec in all_recommendations:
-        category_name = rec.category.name if rec.category else "Общие"
-        if category_name not in recommendations_by_category:
-            recommendations_by_category[category_name] = []
-        recommendations_by_category[category_name].append(rec)
-    
-    context = {
-        'recommendations_by_category': recommendations_by_category,
-        'total_recommendations': all_recommendations.count(),
+    stats = {
+        'applied': user_recs.filter(is_applied=True).count(),
+        'total': user_recs.count(),
+        'new': user_recs.filter(is_viewed=False).count(),
     }
     
-    return render(request, 'carbon_app/recommendations.html', context)
+    # Группировка по категории из модели Recommendation (строка: 'transport', 'food' и т.д.)
+    recs_by_category = {}
+    for ur in user_recs:
+        cat = ur.recommendation.category  # Это строка!
+        if cat not in recs_by_category:
+            recs_by_category[cat] = []
+        recs_by_category[cat].append(ur)
+    
+    return render(request, 'carbon_app/recommendations.html', {
+        'recs_by_category': recs_by_category,
+        'stats': stats,
+    })
 
 @login_required
-def recommendations_page(request):
-    """Страница с рекомендациями"""
-    from .models import UserRecommendation, Recommendation
-    
-    # Если у пользователя нет рекомендаций - создаем
-    if not UserRecommendation.objects.filter(user=request.user).exists():
-        assign_initial_recommendations(request.user)
-    
-    # Показываем рекомендации пользователя
-    recommendations = UserRecommendation.objects.filter(
-        user=request.user
-    ).select_related('recommendation').order_by('-created_at')[:8]  # Показываем 8 последних
-    
-    # Статистика
-    stats = {
-        'total': UserRecommendation.objects.filter(user=request.user).count(),
-        'applied': UserRecommendation.objects.filter(user=request.user, is_applied=True).count(),
-        'new': UserRecommendation.objects.filter(user=request.user, is_viewed=False).count(),
-    }
-    
-    context = {
-        'recommendations': recommendations,
-        'stats': stats,
-    }
-    
-    return render(request, 'carbon_app/recommendations.html', context)
-
+def generate_recommendations(request):
+    """Генерирует новые рекомендации на основе активности пользователя"""
+    update_user_recommendations(request.user)
+    messages.success(request, '✅ Рекомендации обновлены!')
+    return redirect('recommendations')
 
 def assign_initial_recommendations(user):
     """Назначает начальные рекомендации пользователю"""
@@ -409,12 +434,6 @@ def assign_initial_recommendations(user):
             recommendation=rec,
             defaults={'is_viewed': False}
         )
-
-@login_required
-def generate_recommendations(request):
-    """Просто обновляет страницу"""
-    return redirect('recommendations')
-
 
 @login_required
 def mark_recommendation_viewed(request, rec_id):
@@ -471,6 +490,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            assign_initial_recommendations(user)
             return redirect('home')
     else:
         form = UserCreationForm()
