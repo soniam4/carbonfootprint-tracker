@@ -3,23 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Avg, Count
 from django.http import JsonResponse
-import pandas as pd
-import plotly.express as px
-import plotly.io as pio
-from datetime import datetime, timedelta
-import random
-# В начале файла добавьте импорт
-from django.db.models import Sum, Count, Q
 import json
+from collections import defaultdict
+from datetime import datetime, timedelta, date
+import random
+
 from .models import UserActivity, ActivityCategory, EmissionFactor, Recommendation
 from .forms import UserActivityForm
 from django.contrib.auth import login, logout as auth_logout, authenticate
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.decorators import login_required
-import json
-import os
-from django.conf import settings
-from django.utils import timezone 
+from django.utils import timezone
 
 def home(request):
     # Просто берём все активные рекомендации
