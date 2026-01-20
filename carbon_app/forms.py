@@ -4,7 +4,6 @@ from .models import UserActivity, ActivityCategory
 class UserActivityForm(forms.ModelForm):
     """Упрощенная форма для добавления активности"""
     
-    # Явно определяем поле категории
     category = forms.ModelChoiceField(
         queryset=ActivityCategory.objects.all(),
         empty_label="Выберите категорию",
