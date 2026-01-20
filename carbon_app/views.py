@@ -139,7 +139,7 @@ def dashboard(request):
 
 @login_required
 def add_activity(request):
-    """Добавление новой активности - РАБОЧАЯ ВЕРСИЯ"""
+    """Добавление новой активности"""
     
     # Получаем все категории из базы
     categories = ActivityCategory.objects.all()
