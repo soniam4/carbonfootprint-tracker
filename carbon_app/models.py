@@ -91,7 +91,6 @@ class Recommendation(models.Model):
     difficulty = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium', verbose_name="Сложность")
     icon = models.CharField(max_length=50, default='bi-lightbulb', verbose_name="Иконка")
     
-    # ДОБАВЬТЕ ЭТУ СТРОЧКУ ↓
     is_active = models.BooleanField(default=True, verbose_name="Активна")
     
     class Meta:
