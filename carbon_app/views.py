@@ -121,12 +121,10 @@ def dashboard(request):
         # Рекомендации
         'recommendations': recommendations,
         
-        # Сравнение
         'daily_average_global': daily_average_global,
         'comparison': comparison,
         'comparison_percent': round(comparison_percent, 1),
         
-        # Последние активности
         'recent_activities': user_activities.order_by('-date')[:10],
     }
     
@@ -145,7 +143,6 @@ def add_activity(request):
         unit = request.POST.get('unit', '').strip()
         notes = request.POST.get('notes', '').strip()
         
-        # Валидация
         errors = []
         
         if not category_id:
@@ -164,12 +161,10 @@ def add_activity(request):
         if not unit:
             errors.append('Введите единицу измерения')
         
-        # Если есть ошибки - показываем их
         if errors:
             for error in errors:
                 messages.error(request, error)
         else:
-            # СОЗДАЕМ запись вручную
             try:
                 category = ActivityCategory.objects.get(id=category_id)
                 
@@ -192,7 +187,6 @@ def add_activity(request):
             except Exception as e:
                 messages.error(request, f'❌ Ошибка при сохранении: {str(e)}')
         
-    # Контекст для шаблона
     context = {
         'categories': categories,  # Передаем категории в шаблон
     }
