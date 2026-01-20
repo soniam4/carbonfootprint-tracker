@@ -15,10 +15,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.utils import timezone
 
 def home(request):
-    # Просто берём все активные рекомендации
     recommendations = Recommendation.objects.filter(is_active=True)
     
-    # Группируем по категориям для красивого отображения
     rec_by_category = {}
     for rec in recommendations:
         if rec.category not in rec_by_category:
@@ -37,7 +35,6 @@ def dashboard(request):
     from datetime import date, timedelta
     import json
     
-    # Получаем данные пользователя
     user_activities = UserActivity.objects.filter(user=request.user)
     
     # 1. Базовая статистика
@@ -45,12 +42,11 @@ def dashboard(request):
     avg_daily = user_activities.aggregate(Avg('calculated_co2'))['calculated_co2__avg'] or 0
     activity_count = user_activities.count()
     
-    # 2. Аналитика по категориям (Pandas + сложные расчеты)
+    # 2. Аналитика по категориям 
     category_stats = []
     chart_data = []
     
     if user_activities.exists():
-        # Группировка по категориям
         categories = ActivityCategory.objects.all()
         
         for category in categories:
@@ -73,7 +69,7 @@ def dashboard(request):
                     'color': '#28a745' if percentage < 30 else '#ffc107' if percentage < 60 else '#dc3545'
                 })
     
-    # 3. Еженедельная статистика (для графика)
+    # 3. Еженедельная статистика 
     weekly_data = []
     for i in range(6, -1, -1):
         day = date.today() - timedelta(days=i)
@@ -85,9 +81,9 @@ def dashboard(request):
             'co2': round(day_total, 2),
         })
     
-    # 4. Рекомендации (простая логика)
+    # 4. Рекомендации 
     recommendations = []
-    if total_co2 > 50:  # Если общий след больше 50 кг
+    if total_co2 > 50:  
         recommendations.append({
             'title': 'Снизьте использование автомобиля',
             'description': 'Попробуйте общественный транспорт 2 раза в неделю',
@@ -105,8 +101,7 @@ def dashboard(request):
                 'priority': 'medium'
             })
     
-    # 5. Сравнение со средним (16000 кг/год = ~44 кг/день)
-    daily_average_global = 44  # кг/день
+    daily_average_global = 44  
     user_daily_avg = avg_daily
     comparison = "ниже" if user_daily_avg < daily_average_global else "выше"
     comparison_percent = abs((user_daily_avg - daily_average_global) / daily_average_global * 100)
@@ -141,11 +136,9 @@ def dashboard(request):
 def add_activity(request):
     """Добавление новой активности"""
     
-    # Получаем все категории из базы
     categories = ActivityCategory.objects.all()
     
     if request.method == 'POST':
-        # Получаем данные напрямую из request.POST
         category_id = request.POST.get('category')
         activity_type = request.POST.get('activity_type', '').strip()
         quantity = request.POST.get('quantity', '0')
